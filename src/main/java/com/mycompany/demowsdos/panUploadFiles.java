@@ -535,7 +535,7 @@ private void uploadFile (byte[]  byteArray, long intPos)
             if (! this.txtFile.getText().isEmpty()) 
             {
                 try {
-                    String strResp = stub.uploadFileChunk(this.txtApiKey.getText(), selectFile.getName().toString(),  byteArray, intPos);
+                    String strResp = uploadFileChunkManual(this.txtApiKey.getText(), selectFile.getName().toString(),  byteArray, intPos);
                     if (strResp.indexOf("Error") <0){
                         if(lastChunk){
                             try {
@@ -557,6 +557,10 @@ private void uploadFile (byte[]  byteArray, long intPos)
                         this.txtResp.setText("Service error: " + ex.getMessage());
                     }
                 }
+                catch (Exception ex) {
+                    Logger.getLogger(panUploadFiles.class.getName()).log(Level.SEVERE, null, ex);
+                    this.txtResp.setText("Service error: " + ex.getMessage());
+                }
             }
         }
             catch (MalformedURLException ex) {
@@ -566,6 +570,29 @@ private void uploadFile (byte[]  byteArray, long intPos)
         }catch (ServiceException  ex){
             this.txtResp.setText("Service error: " + ex.getMessage());
     }
+}
+
+private String uploadFileChunkManual(String apikey, String filename, byte[] buffer, long offset) throws Exception {
+    org.apache.axis.client.Service service = new org.apache.axis.client.Service();
+    org.apache.axis.client.Call call = (org.apache.axis.client.Call) service.createCall();
+
+    call.setTargetEndpointAddress(new java.net.URL("https://opticatnetwork.com/OBAPI_1_2/Service.svc"));
+    call.setOperationName(new javax.xml.namespace.QName("http://tempuri.org/", "UploadFileChunk"));
+    call.setUseSOAPAction(true);
+    call.setSOAPActionURI("http://tempuri.org/IService/UploadFileChunk");
+    call.setSOAPVersion(org.apache.axis.soap.SOAPConstants.SOAP11_CONSTANTS);
+    call.setEncodingStyle("http://schemas.xmlsoap.org/soap/encoding/");
+    call.setOperationStyle(org.apache.axis.constants.Style.RPC);
+    call.setOperationUse(org.apache.axis.constants.Use.ENCODED);;
+
+    call.addParameter("apikey", org.apache.axis.encoding.XMLType.XSD_STRING, javax.xml.rpc.ParameterMode.IN);
+    call.addParameter("filename", org.apache.axis.encoding.XMLType.XSD_STRING, javax.xml.rpc.ParameterMode.IN);
+    call.addParameter("buffer", org.apache.axis.encoding.XMLType.XSD_BASE64, javax.xml.rpc.ParameterMode.IN);
+    call.addParameter("Offset", org.apache.axis.encoding.XMLType.XSD_LONG, javax.xml.rpc.ParameterMode.IN);
+    call.setReturnType(org.apache.axis.encoding.XMLType.XSD_STRING);
+
+    Object resp = call.invoke(new Object[]{apikey, filename, buffer, offset});
+    return (String) resp;
 }
 
 private  String checksum(final String filepath, MessageDigest md) throws IOException {
